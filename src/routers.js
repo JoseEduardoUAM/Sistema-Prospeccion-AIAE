@@ -136,7 +136,7 @@ route.post( '/ObtenerEstadisticas' , (req,res) => {
             req.getConnection( (err,conn) => {
                 if(err)
                     return res.json( { fecha , numeroProspectos } );
-                conn.query( 'select Fecha , count(*) as num from (select Fecha , idAdm from creacion where idAdm = ?) as tabla group by Fecha ORDER BY Fecha asc' , [IdAdm] , ( err , result ) => {
+                conn.query( 'select Fecha , count(*) as num from (select Fecha , IdAdm from Creacion where IdAdm = ?) as tabla group by Fecha ORDER BY Fecha asc' , [IdAdm] , ( err , result ) => {
                     if(err)
                         return res.json( { fecha , numeroProspectos } );
                     result.forEach( dato => {
