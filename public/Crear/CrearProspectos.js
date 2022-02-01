@@ -3,14 +3,17 @@ let Retroalimentacion = {};
 document.getElementById('btn_enviar').onclick = () =>{
     let {valido,input} = validarDatos();
     if(valido){
-        let data = {};
-        data['ID'] = 0;
+        let Prospecto = {};
+        Prospecto['IdPro'] = 0;
         let formulario = document.getElementById('Formulario');
         for( let i = 0 ; i < 5 ; i++ ){
-            data[ formulario[i].id ] = formulario[i].value
+            Prospecto[ formulario[i].id ] = formulario[i].value;
         }
-        data["Retroalimentaciones"]= [ Retroalimentacion];
-        enviarDatos( data );
+        let Retroalimentaciones = [];
+        Object.keys( Retroalimentacion ).forEach( x => {
+            Retroalimentaciones.push( x );
+        })
+        enviarDatos( { Prospecto , Retroalimentaciones } );
     }else{
         alert(`Se debe completar el campo ${input}`, 'warning')
     }
@@ -39,12 +42,14 @@ function enviarDatos( data ){
     fetch( '/CrearProspecto' , { method: 'POST' , body : JSON.stringify( data ) , headers: {'Content-Type': 'application/json'} } )
         .then( res => res.json() )
         .then( (res) => {
-            console.log(res);
-            limpiarFormulario();
-            alert('Se agrego un nuevo Prospecto', 'success')
+            if( res.status ){
+                limpiarFormulario();
+                alert('Se agrego un nuevo Prospecto', 'success')
+            }else{
+                alert('¡Ocurrio un Error, por favor intente de nuevo!', 'danger')
+            }
         })
         .catch( (err) => {
-            console.log( err );
             alert('¡Ocurrio un Error!', 'danger')
         })
 }

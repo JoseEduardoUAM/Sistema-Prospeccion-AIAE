@@ -100,17 +100,46 @@ route.post( '/ModificarProspecto' , (req,res) => {
 })
 
 route.post( '/CrearProspecto' , (req,res) => {
-    // let Prospecto = req.body.Prospecto;
-    // req.getConnection( (err,conn) => {
-    //     if(err)
-    //         return res.json([]); //  <<----
-    //     conn.query( 'INSERT INTO Prospecto set ?' , [ Prospecto ] , ( err , result ) => {
-    //         if(err)
-    //             return res.json([]);
-    //         res.json( result );
-    //     })
-    // })
-    res.json( { "OK":"OK" } );
+    if( req.cookies.jwt ){
+        let Prospecto = req.body.Prospecto;
+        let Retroalimentaciones = req.body.Retroalimentaciones;
+
+        let seguir = true;
+
+        jwt.verify( req.cookies.jwt , process.env.KEY_SECRET , ( err , decodificada ) => {
+            let IdAdm = decodificada.IdAdm;
+            if(err)
+                return res.json( {status:false} )
+            req.getConnection( (err,conn) => {
+                if(err)
+                    return res.json( {status:false} )
+                conn.query( 'INSERT INTO Prospecto set ?' , [Prospecto] , ( err , result ) => {
+                    if(err)
+                        return res.json( { status:false } );
+                    let IdPro = result.insertId;
+                    Retroalimentaciones.forEach( IdRet => {
+                        conn.query( 'INSERT INTO RelacionRetro VALUES (?,?,?)' , [ 0 , IdRet , IdPro ] , ( err , result ) => {
+                            if(err)
+                                return res.json( {status:false} )
+                        })
+                    })
+                    let date = new Date();
+                    let Fecha = date.getFullYear() + "-" + (date.getMonth()+1) + "-" + date.getDay();
+                    conn.query( 'INSERT INTO Creacion VALUES (?,?,?,?)' , [ 0 , Fecha , IdAdm , IdPro ] , ( err , result ) => {
+                        if(err){
+                            seguir = false;
+                            return res.json( {status:false} )
+                        }
+                    })
+                    if( seguir ){
+                        res.json( {status:true} )
+                    }
+                })
+            })
+        })
+    }else{
+        res.json( {status:false} )
+    }
 })
 
 route.post( '/ObtenerObservaciones' , (req,res) => {
