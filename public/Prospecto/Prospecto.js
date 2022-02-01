@@ -40,7 +40,7 @@ function pintarDatos_agregarDatosForm(data) {
 }
 
 document.getElementById('btn_eliminar').onclick = () =>{
-    fetch( '/EliminarProspect' , { method: 'POST' , body : JSON.stringify( {IdPro} ) , headers: {'Content-Type': 'application/json'} } )
+    fetch( '/EliminarProspecto' , { method: 'POST' , body : JSON.stringify( {IdPro} ) , headers: {'Content-Type': 'application/json'} } )
     .then( res => res.json() )
     .then( (res) => {
         alert('Se Elimino el prospecto', 'success');
