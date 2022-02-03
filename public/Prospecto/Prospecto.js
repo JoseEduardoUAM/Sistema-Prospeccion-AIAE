@@ -1,7 +1,7 @@
 let params = new URLSearchParams(location.search);
 var IdPro = params.get('idProspecto');
 
-let Retroalimentacion = [];
+let Retroalimentacion = {};
 
 fetch( '/DatosProspecto' , { method: 'POST' , body : JSON.stringify( {IdPro} ) , headers: {'Content-Type': 'application/json'} } )
     .then( res => res.json() )
@@ -18,9 +18,15 @@ function pintarDatos_agregarDatosForm(data) {
         document.getElementById( `${x}M` ).value = data[x];
     })
     let Retroalimentaciones = document.getElementById('Retroalimentaciones');
-    Retroalimentacion.innerText = "";
+    Retroalimentaciones.innerText = "";
+    let ListaRetroalimentacion = document.getElementById('ListaRetroalimentacion');
+    ListaRetroalimentacion.innerText = "";
+    let li_dis = document.createElement('li');
+    li_dis.className = "list-group-item disabled";
+    li_dis.innerText = "Lista de Retroalimentaciones";
+    ListaRetroalimentacion.appendChild(li_dis);
+
     data['Retroalimentaciones'].forEach( x => {
-        console.log( x );
         let IdRet = x.IdRet;
         let Nombre = x.Nombre;
         let div = document.createElement('div');
@@ -28,8 +34,8 @@ function pintarDatos_agregarDatosForm(data) {
         div.style.cssText = "background-color: rgb(28, 93, 146); color: aliceblue;";
         div.innerText = Nombre;
         Retroalimentaciones.appendChild(div);
-        Retroalimentacion.push( x );
-        let ListaRetroalimentacion = document.getElementById('ListaRetroalimentacion');
+        Retroalimentacion[IdRet] = Nombre;
+        
         let li = document.createElement('li');
         li.className = "list-group-item";
         li.id = `li-${IdRet}`;
@@ -43,9 +49,11 @@ document.getElementById('btn_eliminar').onclick = () =>{
     fetch( '/EliminarProspecto' , { method: 'POST' , body : JSON.stringify( {IdPro} ) , headers: {'Content-Type': 'application/json'} } )
     .then( res => res.json() )
     .then( (res) => {
-        alert('Se Elimino el prospecto', 'success');
-        seccion_botones.style.display = null;
-        seccion_modificacion.style.display = 'none';
+        if(res.status){
+            window.location.replace(`/tabla`);
+        }else{
+            alert('Ocurrio un error al Eliminar el prospecto', 'danger');
+        }
     })
     .catch( (err) => {
         console.log( err );
@@ -91,13 +99,15 @@ document.getElementById('btn_quitar_retro').onclick = () =>{
 document.getElementById('btn_enviar').onclick = () =>{
     let {valido,input} = validarDatos();
     if(valido){
-        let data = {};
-        data['IdPro'] = IdPro;
+        let Datos = {};
         [ 'Nombre' , 'Telefono' , 'Email' , 'Cargo' , 'Observaciones' ].forEach( x => {
-            data[ x ] = document.getElementById(`${x}M`).value
+            Datos[ x ] = document.getElementById(`${x}M`).value;
         })
-        data["Retroalimentaciones"]= [ Retroalimentacion];
-        modificarDatos( data );
+        let Retro = [];
+        Object.keys( Retroalimentacion ).forEach( x => {
+            Retro.push( { IdRet : x , Nombre : Retroalimentacion[x] } );
+        })
+        modificarDatos( { IdPro , Datos , Retro } );
     }else{
         alert_Formulario(`Se debe completar el campo ${input}`, 'warning')
     }
@@ -107,13 +117,19 @@ function modificarDatos(data){
     fetch( '/ModificarProspecto' , { method: 'POST' , body : JSON.stringify( data ) , headers: {'Content-Type': 'application/json'} } )
     .then( res => res.json() )
     .then( (res) => {
-        console.log( res );
-        alert('Se modifico el prospecto', 'success');
-        seccion_botones.style.display = null;
-        seccion_modificacion.style.display = 'none';
-        pintarDatos_agregarDatosForm(data);
+        if( res.status ){
+            alert('Se modifico el prospecto', 'success');
+            seccion_botones.style.display = null;
+            seccion_modificacion.style.display = 'none';
+            let d = data.Datos;
+            d[ "Retroalimentaciones" ] = data.Retro;
+            pintarDatos_agregarDatosForm(d);
+        }else{
+            alert('¡Ocurrio un Error!', 'danger')
+        }
     })
     .catch( (err) => {
+        console.log(err);
         alert('¡Ocurrio un Error!', 'danger')
     })
 }

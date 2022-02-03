@@ -53,13 +53,12 @@ route.post( '/login' , (req,res) => {
     }
 })
 
-route.get( '/Prospecto' , (req,res) => {
+route.get( '/Prospecto' , autentificar , (req,res) => {
     res.render( 'prospecto' );
 })
 
 route.post( '/DatosProspecto' , (req,res) => {
     let IdPro = req.body.IdPro;
-    console.log( req.body );
     req.getConnection( (err,conn) => {
         if(err)
             return res.json( {} );
@@ -69,7 +68,7 @@ route.post( '/DatosProspecto' , (req,res) => {
             if( results.length !== 1 ) 
                 return res.json( {} );
             let prospecto = results[0];
-            conn.query( ' SELECT Retroalimentacion.IdRet , Nombre FROM RelacionRetro , Retroalimentacion WHERE RelacionRetro.IdRet = Retroalimentacion.IdRet and IdPro = ?' , [ IdPro ] , (err,results) => {
+            conn.query( 'SELECT Retroalimentacion.IdRet , Nombre FROM RelacionRetro , Retroalimentacion WHERE RelacionRetro.IdRet = Retroalimentacion.IdRet and IdPro = ?' , [ IdPro ] , (err,results) => {
                 if(err)
                     return res.json( {} );
                 prospecto["Retroalimentaciones"] = results;
@@ -90,13 +89,50 @@ route.post( '/MostrarTabla' , (req,res) => {
 })
 
 route.post( '/EliminarProspecto' , (req,res) => {
-    console.log( "Segun se elimino el prospecto" + req.body.IdPro );
-    res.json({OK:"OK"})
+    let IdPro = req.body.IdPro;
+    req.getConnection( (err,conn) => {
+        if(err)
+            return res.json( {status:false} )
+        conn.query( 'DELETE FROM Creacion WHERE IdPro = ?' , [ IdPro ] , ( err , result ) => {
+            if(err)
+                return res.json( {status:false} )
+        })
+        conn.query( 'DELETE FROM RelacionRetro WHERE IdPro = ?' , [ IdPro ] , ( err , result ) => {
+            if(err)
+                return res.json( { "status" : false } );
+        })
+        conn.query( 'DELETE FROM Prospecto WHERE IdPro = ?' , [ IdPro ] , ( err , result ) => {
+            if(err)
+                return res.json( { "status" : false } );
+        })
+    })
+    res.json({status:true})
 })
 
 route.post( '/ModificarProspecto' , (req,res) => {
-    console.log( "Segun se modifico el prospecto" + req.body.IdPro );
-    res.json({OK:"OK"})
+    let IdPro = req.body.IdPro;
+    let datosModificados = req.body.Datos;
+    let Retroalimentacion = req.body.Retro;
+    console.log( Retroalimentacion );
+    req.getConnection( (err,conn) => {
+        conn.query( 'UPDATE Prospecto Set ? WHERE IdPro = ?' , [ datosModificados , IdPro ] , ( err , result ) => {
+            if(err)
+                return res.json( { "status" : false } );
+        })
+        conn.query( 'DELETE FROM RelacionRetro WHERE IdPro = ?' , [ IdPro ] , ( err , result ) => {
+            if(err)
+                return res.json( { "status" : false } );
+        })
+        Retroalimentacion.forEach( x => {
+            let agregar = { IdRR : 0 , IdRet : x.IdRet , IdPro }
+            conn.query( 'INSERT INTO RelacionRetro set ?' , [ agregar ] , ( err , result ) => {
+                if(err)
+                    return res.json( { "status" : false } );
+            })
+        })
+        res.json( { "status" : true } );
+    })
+
 })
 
 route.post( '/CrearProspecto' , (req,res) => {
